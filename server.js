@@ -1,78 +1,61 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.post("/chat", async (req, res) => {
+app.get("/",(req,res)=>{
+  res.send("ToolKeet AI Backend Running 🚀");
+});
 
-try {
+app.post("/chat", async(req,res)=>{
 
-const response = await fetch(
-  "https://openrouter.ai/api/v1/chat/completions",
-  {
-    method: "POST",
+  const msg = req.body.message;
 
-    headers: {
-      "Authorization":
-        `Bearer ${process.env.OPENROUTER_API_KEY}`,
+  try{
 
-      "HTTP-Referer":
-        "https://toolkeet.local",
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method:"POST",
+        headers:{
+          "Authorization":"Bearer " + process.env.OPENROUTER_API_KEY,
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          model:"openai/gpt-3.5-turbo",
+          messages:[
+            {
+              role:"user",
+              content:msg
+            }
+          ]
+        })
+      }
+    );
 
-      "X-Title":
-        "ToolKeet",
+    const data = await response.json();
 
-      "Content-Type":
-        "application/json"
-    },
+    res.json({
+      reply:data.choices?.[0]?.message?.content || "No response"
+    });
 
-    body: JSON.stringify({
+  }catch(err){
 
-      model:
-        "openai/gpt-3.5-turbo",
+    console.log(err);
 
-      messages: [
-        {
-          role: "user",
-          content: req.body.message
-        }
-      ]
+    res.json({
+      reply:"Server Error"
+    });
 
-    })
   }
-);
 
-const data = await response.json();
-
-console.log(data);
-
-if(data.error){
-
-  return res.status(500).json({
-    reply: data.error.message
-  });
-}
-
-res.json({
-  reply:
-  data.choices[0].message.content
 });
 
-} catch (error) {
+const PORT = process.env.PORT || 3000;
 
-console.log(error);
-
-res.status(500).json({
-  reply: "Server Error"
-});
-
-}
-});
-
-app.listen(3000, () => {
-console.log("ToolKeet AI Running");
+app.listen(PORT,()=>{
+  console.log("ToolKeet AI Running 🚀");
 });
